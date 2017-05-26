@@ -6,7 +6,7 @@ import argparse
 KAFKA = "kafka_2.11-0.10.2.0"
 KAFKA_CONF = "/home/congweiw/kafka_2.11-0.10.2.0/config/server.properties"
 KAFKA_LOG = "/home/congweiw/kafka_logs"
-
+ZOOKEEPER_CLUSTER = "/home/congweiw/zookeeper.info"
 
 def arg_parser():
     parser = argparse.ArgumentParser()
@@ -17,6 +17,7 @@ def arg_parser():
 
 def getProcess(cmd):
     ps = sb.Popen(cmd, shell=True, stdin=sb.PIPE, stdout=sb.PIPE, stderr=sb.PIPE)
+    print cmd
     out, err = ps.communicate()
     if err:
         print err
@@ -30,25 +31,33 @@ def install(name, zone):
             name=name, zone=zone)
     out, err = getProcess(cmd)
     # setup file directory
-    cmd = 'gcloud compute ssh {name} --zone {zone} --command "rm -r {path}; mkdir {path}"'.format(name=name, zone=zone, path=KAFKA_LOG)
+    cmd = 'gcloud compute ssh {name} --zone {zone} --command "rm -rf *; mkdir {path}"'.format(name=name, zone=zone, path=KAFKA_LOG)
     out, err = getProcess(cmd)
     print "Finish {name} java installation and log/data directory.".format(name=name)
                                                     
-def scp(i, ip, name, zone):
+def scp(i, name, zone):
     kafka_port = "9093"
     zoo_port = "2181"
-    # copy zookeeper directory to remote machine
+    # copy kafka directory to remote machine
     cmd = "gcloud compute copy-files {app} {name}:{app} --zone {zone}".format(app=KAFKA, name=name, zone=zone)
     out, err = getProcess(cmd)
+    # obtain zookeeper cluster info
+    ip_ports = []
+    with open(ZOOKEEPER_CLUSTER, "r") as f:
+        for line in f:
+            ip_ports += [line.split(":")[0] + ":" + zoo_port]
     # assign id
-    cmd = 'gcloud compute ssh {name} \
-            --zone {zone} \
-            --command "printf \"\\nbroker.id={i}\\nlisteners=PLAINTEXT://:{kafka_port}\\nlog.dir={log}\\nzookeeper.connect={ip}:{zoo_port}\" >> {app_conf}"'.format(
-        name=name, zone=zone, ip=ip, i=i, 
-        log=KAFKA_LOG, app_conf=KAFKA_CONF, 
-        kafka_port=kafka_port, zoo_port=zoo_port
-    )
-    out, err = getProcess(cmd)
+    commands = [
+        "broker.id={i}".format(i=i),
+        "listeners=PLAINTEXT://:{kafka_port}".format(kafka_port=kafka_port),
+        "log.dir={log}".format(log=KAFKA_LOG),
+        "zookeeper.connect={ip_ports}".format(ip_ports=",".join(ip_ports))
+    ]
+    for command in commands:
+        cmd = 'gcloud compute ssh {name} --zone {zone} --command "echo -e \"{c}\" >> {app_conf}"'.format(
+            name=name, zone=zone, c=command, app_conf=KAFKA_CONF
+        )
+        out, err = getProcess(cmd)
     print "The [{i}] {name} is assigned.".format(i=i, name=name)
 
 def getIP(name, zone):
@@ -59,7 +68,7 @@ def getIP(name, zone):
 def deploy(name, zone):
     cmd = 'gcloud compute ssh {name} \
             --zone {zone} \
-            --command "nohup {kafka}/bin/kafka-server-start.sh {conf} &"'.format(name=name, zone=zone, kafka=KAFKA, conf=KAFKA_CONF)
+            --command "{kafka}/bin/kafka-server-start.sh {conf} &"'.format(name=name, zone=zone, kafka=KAFKA, conf=KAFKA_CONF)
     out, err = getProcess(cmd)
     print "Deploy {name} kakfa.".format(name=name)
 
@@ -91,8 +100,8 @@ def run(instance_group, command):
         elif command == "stop":
             stop(name, zone)
         elif command == "deploy":
-            ip = getIP(name, zone)
-            scp(i, ip, name, zone)
+            # ip = getIP(name, zone)
+            scp(i,name, zone)
 
     if command in ("install", "stop"):
         print "Successfully {command}.".format(command=command)
