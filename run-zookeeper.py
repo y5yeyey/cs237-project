@@ -8,6 +8,7 @@ ZOO_FILE = "zookeeper-3.4.10/conf/zoo_sample.cfg"
 ZOO_CONF = "zookeeper-3.4.10/conf/zoo.cfg"
 ZOO_DATA = "/home/congweiw/zookeeper_data"
 ZOO_LOG = "/home/congweiw/zookeeper_logs"
+CLUSTER_INFO = "/home/congweiw/zookeeper.info"
 
 
 def arg_parser():
@@ -97,6 +98,13 @@ def run(instance_group, command):
         ip = getIP(name, zone)
         server_info += ["server.{i}={ip}:{port1}:{port2}".format(i=i, ip=ip, port1=port1, port2=port2)]
     
+    # save cluster config file
+    if command == "deploy":
+        with open(CLUSTER_INFO, "w") as f:
+            for line in server_info[2:]:
+                f.write(":".join("".join(line.split("=")[1:]).split(":")[:2]) + "\n")
+        print "Output cluster info."
+
     if command in ("install", "stop"):
         print "Successfully {command}.".format(command=command)
         return
