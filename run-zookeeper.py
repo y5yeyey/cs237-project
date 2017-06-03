@@ -29,6 +29,11 @@ def getProcess(cmd):
 def install(name, zone):
     cmd = 'gcloud compute ssh {name} \
             --zone {zone} \
+            --command "sudo apt-get update"'.format(
+            name=name, zone=zone)
+    out, err = getProcess(cmd)
+    cmd = 'gcloud compute ssh {name} \
+            --zone {zone} \
             --command "yes | sudo apt install -t jessie-backports openjdk-8-jre-headless ca-certificates-java"'.format(
             name=name, zone=zone)
     out, err = getProcess(cmd)
@@ -77,7 +82,7 @@ def run(instance_group, command):
         print "Please enter valid command!"
         return
 
-    cmd = "gcloud compute instance-groups list-instances {group} --zone us-central1-c".format(group=instance_group) 
+    cmd = "gcloud compute instance-groups list-instances {group} --zone us-east1-d".format(group=instance_group) 
     out, err = getProcess(cmd)
     list_of_machines = [[i+1]+_.split("  ") for i, _ in enumerate(out.split("\n")[1:]) if _]
     
@@ -88,6 +93,7 @@ def run(instance_group, command):
     server_info = ["dataDir={zoo_data}".format(zoo_data=ZOO_DATA), "dataLogDir={zoo_log}".format(zoo_log=ZOO_LOG)]
     for machine in list_of_machines:
         i, name, zone, status = machine
+        print name, zone
         # install packages only
         if command == "install":
             install(name, zone)
