@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import subprocess as sb
 import argparse
 
@@ -68,8 +69,9 @@ def getIP(name, zone):
 def deploy(name, zone):
     cmd = 'gcloud compute ssh {name} \
             --zone {zone} \
-            --command "{kafka}/bin/kafka-server-start.sh {conf} &"'.format(name=name, zone=zone, kafka=KAFKA, conf=KAFKA_CONF)
-    out, err = getProcess(cmd)
+            --command "nohup {kafka}/bin/kafka-server-start.sh {conf}" &'.format(name=name, zone=zone, kafka=KAFKA, conf=KAFKA_CONF)
+    os.spawnl(os.P_NOWAIT, cmd)
+    # out, err = getProcess(cmd)
     print "Deploy {name} kakfa.".format(name=name)
 
 def stop(name, zone):
