@@ -48,7 +48,7 @@ def deploy(name, zone):
             --zone {zone} \
             --command "{storm}/bin/storm supervisor"'.format(name=name, zone=zone, storm=STORM)
     out, err = getProcess(cmd)
-    print "Deploy {name} storm.".format(name=name)
+    print "Deploy {name} storm supervios.".format(name=name)
 
 def stop(name, zone):
     cmd = 'gcloud compute ssh {name} \
@@ -64,7 +64,7 @@ def run(instance_group, command):
         print "Please enter valid command!"
         return
 
-    cmd = "gcloud compute instance-groups list-instances {group} --zone us-west1-c".format(group=instance_group) 
+    cmd = "gcloud compute instance-groups list-instances {group} --zone us-west1-a".format(group=instance_group) 
     out, err = getProcess(cmd)
     list_of_machines = [[i+1]+_.split("  ") for i, _ in enumerate(out.split("\n")[1:]) if _]
     
@@ -90,7 +90,7 @@ def run(instance_group, command):
     # deploy on each machine
     for machine in list_of_machines:
         i, name, zone, status = machine
-        deploy(name, zone)
+        # deploy(name, zone)
     
     print "Successfully {command}.".format(command=command)
 

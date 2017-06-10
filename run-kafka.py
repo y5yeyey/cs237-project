@@ -88,7 +88,7 @@ def run(instance_group, command):
         print "Please enter valid command!"
         return
 
-    cmd = "gcloud compute instance-groups list-instances {group} --zone us-central1-c".format(group=instance_group) 
+    cmd = "gcloud compute instance-groups list-instances {group} --zone us-west1-a".format(group=instance_group) 
     out, err = getProcess(cmd)
     list_of_machines = [[i+1]+_.split("  ") for i, _ in enumerate(out.split("\n")[1:]) if _]
     
